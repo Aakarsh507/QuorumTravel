@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // switch to "postgresql" when deploying
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String       @id @default(cuid())
+  displayName String
+  memberships TripMember[]
+}
+
+model Trip {
+  id        String          @id @default(cuid())
+  name      String
+  version   Int             @default(0) // bumped on every itinerary change
+  members   TripMember[]
+  items     ItineraryItem[]
+}
+
+model TripMember {
+  tripId  String
+  userId  String
+  role    String  @default("MEMBER") // CREATOR | MEMBER
+  canEdit Boolean @default(false) // creator may grant edit rights
+  trip    Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([tripId, userId])
+}
+
+model ItineraryItem {
+  id             String   @id @default(cuid())
+  tripId         String
+  type           String // FLIGHT | LODGING | ACTIVITY
+  title          String
+  startAt        DateTime
+  endAt          DateTime
+  timezone       String   @default("UTC")
+  location       String   @default("")
+  status         String   @default("PROPOSED") // CONFIRMED | PROPOSED
+  version        Int      @default(1)
+  participantIds String   @default("[]") // JSON array of user ids; [] = whole group
+  createdById    String
+  lastEditedById String
+  updatedAt      DateTime @updatedAt
+  trip           Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+}
