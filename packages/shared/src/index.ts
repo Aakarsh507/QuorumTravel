@@ -35,7 +35,20 @@ export interface ItinerarySnapshot {
 
 export const SOCKET_EVENTS = {
   snapshot: "itinerary:snapshot",
+  planChanged: "plan:changed",
 } as const;
+
+/**
+ * Pushed to a trip's room when readiness or the group plan changes (SYS-02).
+ * It is only a "something changed, reload" signal: it carries no preferences,
+ * votes or plan data, so each client re-fetches its own view through the
+ * guarded REST routes and FR-103 privacy holds for live updates too.
+ */
+export type PlanChangeReason = "preferences" | "member-joined" | "generated" | "vote";
+export interface PlanChangedEvent {
+  tripId: string;
+  reason: PlanChangeReason;
+}
 
 const isoDate = z
   .string()
