@@ -6,3 +6,6 @@ dist/
 .env.local
 coverage/
 .DS_Store
+apps/server/prisma/e2e.db*
+test-results/
+playwright-report/

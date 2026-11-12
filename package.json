@@ -16,6 +16,10 @@
     "dev:web": "npm run dev -w @quorum/web",
     "test": "npm test -w @quorum/shared && npm test -w @quorum/server",
     "typecheck": "npm run typecheck -w @quorum/shared && npm run typecheck -w @quorum/server && npm run typecheck -w @quorum/web",
-    "build": "npm run build -w @quorum/web"
+    "build": "npm run build -w @quorum/web",
+    "e2e": "node e2e/prepare.mjs && playwright test -c e2e/playwright.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0"
   }
 }
