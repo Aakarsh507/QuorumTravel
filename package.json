@@ -1,0 +1,21 @@
+{
+  "name": "quorum",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Quorum - group trip planning (ECE 49595 SD I, Team 11)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "setup": "npm run db:push -w @quorum/server && npm run db:seed -w @quorum/server",
+    "dev:server": "npm run dev -w @quorum/server",
+    "dev:web": "npm run dev -w @quorum/web",
+    "test": "npm test -w @quorum/shared && npm test -w @quorum/server",
+    "typecheck": "npm run typecheck -w @quorum/shared && npm run typecheck -w @quorum/server && npm run typecheck -w @quorum/web",
+    "build": "npm run build -w @quorum/web"
+  }
+}
