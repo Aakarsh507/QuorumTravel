@@ -82,6 +82,27 @@ describe("trip setup (Workflow 1, screens 1–2)", () => {
   });
 });
 
+describe("deleting a trip", () => {
+  it("only the creator can delete; everything in the trip goes with it", async () => {
+    expect((await api("DELETE", `/trips/${t.nash}`, u.maya)).status).toBe(403);
+    expect((await api("DELETE", `/trips/${t.nash}`, outsider)).status).toBe(403);
+    expect((await api("DELETE", `/trips/${t.nash}`, null)).status).toBe(401);
+
+    expect((await api("DELETE", `/trips/${t.nash}`, u.alex)).status).toBe(204);
+    expect(await prisma.trip.count({ where: { id: t.nash } })).toBe(0);
+    expect(await prisma.tripMember.count({ where: { tripId: t.nash } })).toBe(0);
+    expect(await prisma.preference.count({ where: { tripId: t.nash } })).toBe(0);
+    expect(await prisma.groupPlan.count({ where: { tripId: t.nash } })).toBe(0);
+    expect(await prisma.vote.count()).toBe(0); // Nashville held the only votes
+
+    // gone from every member's dashboard, other trips untouched
+    const maya = await api("GET", "/me/trips", u.maya);
+    expect(maya.json.map((x: { name: string }) => x.name)).toEqual(["Miami Spring Break 2027"]);
+    expect((await api("GET", `/trips/${t.nash}`, u.alex)).status).toBe(403);
+    expect((await api("DELETE", `/trips/${t.nash}`, u.alex)).status).toBe(403);
+  });
+});
+
 describe("FR-101 constraint submission (5 users)", () => {
   it("stores every field exactly for 5 of 5 users", async () => {
     const people = [u.alex, u.maya, u.jordan, u.sam, u.priya];
