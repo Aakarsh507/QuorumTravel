@@ -119,6 +119,7 @@ export const api = {
   createTrip: (uid: string, name: string) =>
     request<{ id: string; name: string; inviteCode: string }>("POST", "/trips", uid, { name }),
   trip: (uid: string, tripId: string) => request<TripDetail>("GET", `/trips/${tripId}`, uid),
+  deleteTrip: (uid: string, tripId: string) => request<null>("DELETE", `/trips/${tripId}`, uid),
   invite: (uid: string, tripId: string, emails: string[]) =>
     request<TripDetail["invites"]>("POST", `/trips/${tripId}/invites`, uid, { emails }),
   join: (uid: string, code: string) => request<{ tripId: string; name: string }>("POST", `/join/${code}`, uid),

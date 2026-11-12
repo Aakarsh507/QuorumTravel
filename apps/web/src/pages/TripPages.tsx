@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useOutletContext, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
 import { Eyebrow, Pill, type TripContext } from "../components/Layout";
 import { useLoad, useSession } from "../session";
@@ -45,7 +45,57 @@ export function TripOverviewPage() {
         {isCreator && <Link to={`/trips/${trip.id}/setup/invite`} className="q-btn">Invite more people</Link>}
         <Link to="plan" className="q-btn q-btn-primary">Go to group plan</Link>
       </div>
+
+      {isCreator && <DeleteTrip tripId={trip.id} name={trip.name} travelers={trip.members.length} />}
     </section>
+  );
+}
+
+/** Organizer only: two-step delete (button, then an inline confirmation). */
+function DeleteTrip({ tripId, name, travelers }: { tripId: string; name: string; travelers: number }) {
+  const { userId } = useSession();
+  const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function remove() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.deleteTrip(userId, tripId);
+      navigate("/", { replace: true });
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not delete the trip");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="q-danger">
+      {!confirming ? (
+        <div className="q-row">
+          <div>
+            <strong>Delete this trip</strong>
+            <p className="q-muted q-small">Removes the trip for everyone. Only you, the organizer, can do this.</p>
+          </div>
+          <button type="button" className="q-btn q-btn-danger-outline" onClick={() => setConfirming(true)}>Delete trip</button>
+        </div>
+      ) : (
+        <div role="alertdialog" aria-labelledby="del-title" aria-describedby="del-desc">
+          <strong id="del-title">Delete “{name}”?</strong>
+          <p id="del-desc" className="q-small">
+            {travelers === 1 ? "This removes the trip" : `This removes it for all ${travelers} travelers`}, along with preferences, the
+            group plan, votes and itinerary. This can't be undone.
+          </p>
+          {error && <p role="alert" className="q-field-error">{error}</p>}
+          <div className="q-actions">
+            <button type="button" className="q-btn" onClick={() => setConfirming(false)} disabled={busy} autoFocus>Cancel</button>
+            <button type="button" className="q-btn q-btn-danger" onClick={remove} disabled={busy}>{busy ? "Deleting…" : "Yes, delete trip"}</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

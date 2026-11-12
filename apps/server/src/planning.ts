@@ -104,6 +104,15 @@ export function registerPlanningRoutes(app: FastifyInstance, prisma: PrismaClien
     };
   });
 
+  /** Creator only. Removes the trip and everything in it (members, preferences, plan, votes, itinerary). */
+  app.delete("/trips/:tripId", async (req: TripReq, reply) => {
+    const ctx = await member(req, reply);
+    if (!ctx) return;
+    if (ctx.m.role !== "CREATOR") return reply.code(403).send({ error: "Only the trip creator can delete this trip" });
+    await prisma.trip.delete({ where: { id: req.params.tripId } }); // relations cascade
+    return reply.code(204).send();
+  });
+
   app.post("/trips/:tripId/invites", async (req: TripReq, reply) => {
     const ctx = await member(req, reply);
     if (!ctx) return;

@@ -160,3 +160,12 @@ main.q-trip-main { max-width: none; margin: 0; padding: 36px 40px 48px; }
 .q-vote-card p { margin: 0 0 6px; color: #cfe0dc; }
 .q-vote-count { font-size: 1.25rem; font-weight: 700; color: #fff !important; }
 .q-vote-card .q-pill { margin-top: 10px; }
+
+/* ---- danger zone (delete trip) */
+.q-danger { margin-top: 40px; padding: 16px 18px; border: 1px solid #f1c8c3; border-radius: var(--q-radius); background: #fffafa; }
+.q-danger p { margin: 4px 0 0; }
+.q-danger .q-actions { margin-top: 14px; }
+.q-btn-danger { background: var(--q-red-ink); border-color: var(--q-red-ink); color: #fff; }
+.q-btn-danger:hover { background: #861e16; }
+.q-btn-danger-outline { color: var(--q-red-ink); border-color: #f1c8c3; }
+.q-btn-danger-outline:hover { background: var(--q-red-bg); }
