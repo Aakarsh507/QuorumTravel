@@ -6,6 +6,7 @@ import {
   solveGroupPlan,
   tallyStatus,
   voteInputSchema,
+  type PlanChangeReason,
   type PlanResult,
   type PlanStatus,
   type Preference,
@@ -20,7 +21,16 @@ import { getMembership, type Membership } from "./service";
  * preferences are never returned by any route (FR-103): readiness exposes only
  * "submitted yes/no", and the plan holds only aggregate results.
  */
-export function registerPlanningRoutes(app: FastifyInstance, prisma: PrismaClient) {
+export interface PlanningRouteOptions {
+  /** Push a `plan:changed` event to the trip's members (wired to Socket.IO in app.ts). */
+  notifyPlanChanged?: (tripId: string, reason: PlanChangeReason) => void;
+}
+
+export function registerPlanningRoutes(
+  app: FastifyInstance,
+  prisma: PrismaClient,
+  { notifyPlanChanged = () => {} }: PlanningRouteOptions = {},
+) {
   type TripReq = FastifyRequest<{ Params: { tripId: string } }>;
 
   async function currentUser(req: FastifyRequest, reply: FastifyReply): Promise<User | null> {
@@ -148,6 +158,7 @@ export function registerPlanningRoutes(app: FastifyInstance, prisma: PrismaClien
       create: { tripId: trip.id, userId: user.id },
       update: {},
     });
+    notifyPlanChanged(trip.id, "member-joined"); // readiness now has one more traveler
     return { tripId: trip.id, name: trip.name };
   });
 
@@ -192,6 +203,7 @@ export function registerPlanningRoutes(app: FastifyInstance, prisma: PrismaClien
       create: { tripId: req.params.tripId, userId: ctx.user.id, ...data },
       update: data,
     });
+    notifyPlanChanged(req.params.tripId, "preferences"); // others only learn "submitted", never the values
     return { preference: p };
   });
 
@@ -269,6 +281,7 @@ export function registerPlanningRoutes(app: FastifyInstance, prisma: PrismaClien
         },
       }),
     ]);
+    notifyPlanChanged(req.params.tripId, "generated");
     return reply.code(201).send(await planView(req.params.tripId, ctx.user.id));
   });
 
@@ -297,6 +310,7 @@ export function registerPlanningRoutes(app: FastifyInstance, prisma: PrismaClien
       memberCount,
     );
     if (status !== plan.status) await prisma.groupPlan.update({ where: { id: plan.id }, data: { status } });
+    notifyPlanChanged(req.params.tripId, "vote");
     return planView(req.params.tripId, ctx.user.id);
   });
 }
