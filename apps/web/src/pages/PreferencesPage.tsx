@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { AIRPORTS, PREFERENCE_TAGS, preferenceInputSchema, type PreferenceTag } from "@quorum/shared";
 import { ApiError, api } from "../api";
-import { Eyebrow, Pill, type TripContext } from "../components/Layout";
+import { CheckCircle2, Sparkles } from "lucide-react";
+import { PageTitle, PrivacyBanner } from "../components/Design";
+import { type TripContext } from "../components/Layout";
 import { useSession } from "../session";
 
 interface Range {
@@ -31,7 +33,9 @@ export function PreferencesPage() {
 
   useEffect(() => {
     setLoaded(false);
+    let alive = true;
     api.myPreference(userId, trip.id).then(({ preference: p }) => {
+      if (!alive) return;
       if (p) {
         setRanges(p.dateRanges);
         setBudget(String(p.maxBudgetUsd));
@@ -44,7 +48,8 @@ export function PreferencesPage() {
         setTags([]);
       }
       setLoaded(true);
-    });
+    }).catch(() => { if (alive) { setFormError("Could not load your preferences. Please try again."); setLoaded(true); } });
+    return () => { alive = false; };
   }, [userId, trip.id]);
 
   /** Editing a field clears its error until the next submit. */
@@ -95,20 +100,11 @@ export function PreferencesPage() {
   if (!loaded) return <p>Loading your preferences…</p>;
 
   return (
-    <form className="q-content" onSubmit={submit} noValidate aria-labelledby="pref-title">
-      <Eyebrow>Only you can see these values</Eyebrow>
-      <div className="q-title-row">
-        <h1 id="pref-title">My travel preferences</h1>
-        <Pill tone="good">Private</Pill>
-      </div>
-      <p className="q-muted">
-        For <strong>{trip.name}</strong>. Your dates and budget are only used by the planner. Other travelers never see them.
-      </p>
-
+    <section className="preferences-page"><PageTitle title="My travel preferences" subtitle="Only you can see your exact dates and budget." /><PrivacyBanner /><div className="preferences-layout"><form className="card pref-form" onSubmit={submit} noValidate aria-labelledby="pref-title">
       {formError && <p role="alert" className="q-banner q-banner-error">{formError}</p>}
 
-      <fieldset className="q-fieldset">
-        <legend>Available dates</legend>
+      <fieldset className="q-fieldset pref-section">
+        <legend><span className="section-number">1</span> Available dates</legend><p className="section-description">Add one or more windows when you can travel.</p>
         {ranges.map((r, i) => (
           <div key={i} className="q-date-row">
             <label className="q-field">
@@ -137,7 +133,7 @@ export function PreferencesPage() {
         )}
       </fieldset>
 
-      <div className="q-grid-2">
+      <div className="pref-section"><div className="form-section-title"><span>2</span><div><h3>Maximum budget</h3><p>Your total personal budget, including travel, stay, food, and activities.</p></div></div>
         <label className="q-field">
           Maximum budget (USD)
           <div className="q-input-prefix">
@@ -147,9 +143,10 @@ export function PreferencesPage() {
           </div>
           {err("maxBudgetUsd") ? <ErrorText k="maxBudgetUsd" /> : <span id="budget-help" className="q-muted q-small">Flights, lodging, food and activities, per person.</span>}
         </label>
+      </div><div className="pref-section"><div className="form-section-title"><span>3</span><div><h3>Departure airport</h3><p>We’ll compare travel from your preferred airport.</p></div></div>
         <label className="q-field">
-          Departure airport
-          <input list="airports" value={airport} onChange={(e) => (clear("departureAirport"), setAirport(e.target.value.toUpperCase()))} placeholder="IND" maxLength={3}
+          Airport
+          <input aria-label="Departure airport" list="airports" value={airport} onChange={(e) => (clear("departureAirport"), setAirport(e.target.value.toUpperCase()))} placeholder="IND" maxLength={3}
             aria-invalid={!!err("departureAirport")} aria-describedby={describe("departureAirport")} />
           <datalist id="airports">
             {AIRPORTS.map((a) => <option key={a.code} value={a.code}>{a.city}, {a.state}</option>)}
@@ -158,8 +155,8 @@ export function PreferencesPage() {
         </label>
       </div>
 
-      <fieldset className="q-fieldset">
-        <legend>Vibe <span className="q-muted q-small">(up to 5)</span></legend>
+      <fieldset className="q-fieldset pref-section">
+        <legend><span className="section-number">4</span> Travel preferences</legend><p className="section-description">Choose up to five things you’d enjoy most.</p>
         <div className="q-chips">
           {PREFERENCE_TAGS.map((t) => (
             <button key={t} type="button" className={`q-chip${tags.includes(t) ? " on" : ""}`} aria-pressed={tags.includes(t)} onClick={() => toggleTag(t)}>
@@ -174,6 +171,6 @@ export function PreferencesPage() {
         <Link to={`/trips/${trip.id}`} className="q-btn">Cancel</Link>
         <button className="q-btn q-btn-primary" disabled={saving}>{saving ? "Saving…" : "Save preferences"}</button>
       </div>
-    </form>
+    </form><aside className="pref-side card"><div className="side-icon"><Sparkles size={20} /></div><h3>How Quorum uses this</h3><p>We combine everyone’s constraints without showing private values to other travelers.</p>{["Find overlapping dates", "Stay within every budget", "Balance group interests"].map(text => <div key={text}><CheckCircle2 size={17} /><span>{text}</span></div>)}</aside></div></section>
   );
 }

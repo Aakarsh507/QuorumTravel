@@ -85,3 +85,9 @@ Server tests use a throwaway `prisma/test.db`, never `dev.db`.
 | NFR-403 | 4 clients, 10 sync events, identical hashes |
 | FR-405 | unit tests (overlap, back-to-back, lodging rule, removal) and API check |
 | Permissions / access | role table, non-member 403, socket refusal, 409 on stale edit, validation |
+
+## Desktop interface integration
+
+The planning workflow uses the laptop/web layout from [Proposed UI/UX](https://www.figma.com/make/PS0sE9rDcH031bP6FGxSmK/Proposed-UI-UX): the trip dashboard, setup wizard, sidebar, overview, private preferences, readiness, conflict, voting, and approval screens. The original destination photographs and favicon are stored under `apps/web/public`. Shared presentation components are in `components/Design.tsx`; `figma.css` contains the exported design rules and `integration.css` adapts the existing controls.
+
+The screens read and write the existing API. Trip counts, readiness, estimates, and vote totals come from server data. The Figma export's hardcoded trips and local-storage planner are not used. Destinations without a supplied photograph have a neutral cover. The existing demo-user switcher remains available for testing collaboration; production authentication is still pending. Flights, Stays, Explore, AI Assistant, and Expenses are visible navigation destinations with explicit placeholder pages. The existing shared itinerary keeps its real-time and permission behavior within the new shell. Mobile layout work is outside this change.
