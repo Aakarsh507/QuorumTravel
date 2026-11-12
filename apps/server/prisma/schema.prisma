@@ -11,14 +11,21 @@ model User {
   id          String       @id @default(cuid())
   displayName String
   memberships TripMember[]
+  preferences Preference[]
+  votes       Vote[]
 }
 
 model Trip {
-  id        String          @id @default(cuid())
-  name      String
-  version   Int             @default(0) // bumped on every itinerary change
-  members   TripMember[]
-  items     ItineraryItem[]
+  id          String          @id @default(cuid())
+  name        String
+  version     Int             @default(0) // bumped on every itinerary change
+  inviteCode  String          @unique @default(cuid()) // share link: /join/<inviteCode>
+  createdAt   DateTime        @default(now())
+  members     TripMember[]
+  items       ItineraryItem[]
+  invites     Invite[]
+  preferences Preference[]
+  plan        GroupPlan?
 }
 
 model TripMember {
@@ -50,4 +57,54 @@ model ItineraryItem {
   trip           Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([tripId])
+}
+
+// ---- SYS-01 / SYS-02: group trip planning
+
+model Invite {
+  id        String   @id @default(cuid())
+  tripId    String
+  email     String
+  createdAt DateTime @default(now())
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, email])
+}
+
+/// Private to its owner and the solver (FR-103). Never returned to other members.
+model Preference {
+  tripId           String
+  userId           String
+  dateRanges       String   // JSON [{start,end}] YYYY-MM-DD
+  maxBudgetUsd     Int
+  departureAirport String
+  tags             String   @default("[]") // JSON PreferenceTag[]
+  updatedAt        DateTime @updatedAt
+  trip             Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([tripId, userId])
+}
+
+/// The trip's current plan. Regenerating replaces it (and its votes).
+model GroupPlan {
+  id          String   @id @default(cuid())
+  tripId      String   @unique
+  status      String   // PROPOSED | CONFIRMED | REJECTED | INFEASIBLE
+  result      String   // JSON PlanResult (contains no private values)
+  createdById String
+  createdAt   DateTime @default(now())
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  votes       Vote[]
+}
+
+model Vote {
+  planId    String
+  userId    String
+  choice    String   // APPROVE | REJECT
+  createdAt DateTime @default(now())
+  plan      GroupPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([planId, userId])
 }
