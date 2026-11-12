@@ -11,6 +11,7 @@ export type PreferenceTag = (typeof PREFERENCE_TAGS)[number];
 
 const ymd = z
   .string()
+  .min(1, "Pick a date")
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Use the format YYYY-MM-DD")
   .refine((s) => !Number.isNaN(Date.parse(`${s}T00:00:00Z`)), "Not a real date");
 
@@ -29,6 +30,7 @@ export const preferenceInputSchema = z.object({
     .string()
     .trim()
     .toUpperCase()
+    .min(1, "Enter your departure airport")
     .refine(isKnownAirport, "Unknown airport code (use a 3-letter IATA code such as IND)"),
   tags: z.array(z.enum(PREFERENCE_TAGS)).max(5, "Pick up to 5 tags").default([]),
 });

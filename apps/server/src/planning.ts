@@ -111,7 +111,12 @@ export function registerPlanningRoutes(app: FastifyInstance, prisma: PrismaClien
     const body = z
       .object({ emails: z.array(z.string().trim().toLowerCase().email("Enter a valid email address")).min(1).max(20) })
       .safeParse(req.body);
-    if (!body.success) return reply.code(400).send({ error: body.error.issues[0]!.message });
+    if (!body.success) {
+      const issue = body.error.issues[0]!;
+      const raw = (req.body as { emails?: unknown[] } | undefined)?.emails?.[issue.path[1] as number];
+      const error = issue.path[0] === "emails" && typeof raw === "string" ? `"${raw}" is not a valid email address` : issue.message;
+      return reply.code(400).send({ error });
+    }
     for (const email of body.data.emails) {
       await prisma.invite.upsert({
         where: { tripId_email: { tripId: req.params.tripId, email } },
