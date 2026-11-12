@@ -10,6 +10,7 @@ import {
   type ItineraryItem,
 } from "@quorum/shared";
 import { USER_HEADER, resolveUser } from "./auth";
+import { registerPlanningRoutes } from "./planning";
 import {
   bumpVersion,
   canManage,
@@ -248,6 +249,9 @@ export async function createApp({ prisma, webOrigin = "http://localhost:5173", e
       return { userId: req.params.userId, canEdit: body.data.canEdit };
     },
   );
+
+  // ---- SYS-01 / SYS-02: trips, invites, private preferences, group plan + votes
+  registerPlanningRoutes(app, prisma);
 
   return {
     app,

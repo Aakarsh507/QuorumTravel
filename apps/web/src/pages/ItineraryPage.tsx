@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { ITEM_TYPES, type ItemType, type ItineraryItem } from "@quorum/shared";
-import { ApiError, api, type DevUser, type Me, type Member } from "./api";
-import { useItinerary, type SyncState } from "./useItinerary";
+import { ApiError, api, type Me, type Member } from "../api";
+import type { TripContext } from "../components/Layout";
+import { useSession } from "../session";
+import { useItinerary, type SyncState } from "../useItinerary";
 
 const TYPE_LABEL: Record<ItemType, string> = { FLIGHT: "Flight", LODGING: "Lodging", ACTIVITY: "Activity" };
 const TYPE_ICON: Record<ItemType, string> = { FLIGHT: "✈️", LODGING: "🏨", ACTIVITY: "🎟️" };
@@ -18,44 +21,15 @@ const toLocalInput = (iso: string) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-export function App() {
-  const [users, setUsers] = useState<DevUser[]>([]);
-  const [userId, setUserId] = useState<string>("");
-  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    api
-      .devUsers()
-      .then((u) => {
-        setUsers(u);
-        if (u[0]) setUserId(u[0].id);
-      })
-      .catch(() => setLoadError("Cannot reach the server on port 3001. Start it with: npm run dev:server"));
-  }, []);
-
-  const user = users.find((u) => u.id === userId);
-  const trip = user?.trips[0];
-
+/** "Itinerary" tab — SYS-04 shared itinerary, unchanged, now inside the trip layout. */
+export function ItineraryRoute() {
+  const { trip } = useOutletContext<TripContext>();
+  const { userId } = useSession();
   return (
-    <>
-      <a className="skip" href="#main">Skip to itinerary</a>
-      <header className="topbar">
-        <h1>Quorum</h1>
-        <div className="who">
-          {/* Dev-only stand-in for login (SYS-07) so several members can be demoed */}
-          <label htmlFor="user-switch">Viewing as</label>
-          <select id="user-switch" value={userId} onChange={(e) => setUserId(e.target.value)}>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>{u.displayName}</option>
-            ))}
-          </select>
-        </div>
-      </header>
-      <main id="main">
-        {loadError && <p role="alert" className="banner error">{loadError}</p>}
-        {user && trip && <ItineraryPage key={`${user.id}:${trip.id}`} userId={user.id} tripId={trip.id} tripName={trip.name} />}
-      </main>
-    </>
+    <div className="itinerary-scope">
+      <ItineraryPage key={`${userId}:${trip.id}`} userId={userId} tripId={trip.id} tripName={trip.name} />
+    </div>
   );
 }
 
