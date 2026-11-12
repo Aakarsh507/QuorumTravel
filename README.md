@@ -4,9 +4,11 @@ Group trip planning (ECE 49595 SD I, Team 11).
 
 Aakarsh Gupta · Dylan Patel · Roshan Patel · Zachary Krause
 
+**How we work:** branching, PR and review rules are in [doc/DEVELOPMENT_PROCESS.md](doc/DEVELOPMENT_PROCESS.md).
+
 ## What is built so far
 
-**SYS-04 Shared Itinerary** (FR-401, FR-402, FR-405, NFR-401, NFR-403). Plan: [docs/SYS-04-itinerary-plan.md](docs/SYS-04-itinerary-plan.md).
+**SYS-04 Shared Itinerary** (FR-401, FR-402, FR-405, NFR-401, NFR-403). Plan: [doc/SYS-04-itinerary-plan.md](doc/SYS-04-itinerary-plan.md).
 
 - Chronological itinerary of flights, lodging and activities, synced live to every member (Socket.IO).
 - Overlap flagging (lodging only conflicts with other lodging).
@@ -21,7 +23,7 @@ Authentication (SYS-07) is **not** built yet. `apps/server/src/auth.ts` holds a 
 packages/shared   types, validation, sort / conflict / hash logic (web + server)
 apps/server       Fastify API + Socket.IO + Prisma (SQLite in dev)
 apps/web          React + Vite itinerary page
-docs/             project documents and the SYS-04 plan
+doc/              project documents and the SYS-04 plan
 ```
 
 ## Setup

@@ -8,6 +8,7 @@
     "start": "tsx src/main.ts",
     "db:push": "prisma db push --skip-generate && prisma generate",
     "db:seed": "tsx prisma/seed.ts",
+    "db:generate": "prisma generate",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json"
   },
