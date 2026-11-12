@@ -50,19 +50,19 @@ button.primary:hover { background: #2f3eae; }
 .day h3 { margin: 24px 0 8px; font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .day ul, .members ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 
-.card { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-left: 5px solid var(--activity); border-radius: 8px; }
-.card.type-flight { border-left-color: var(--flight); }
-.card.type-lodging { border-left-color: var(--lodging); }
-.card.proposed { opacity: .6; background: #fafbff; border-style: dashed; border-left-style: solid; }
-.card.conflict { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
-.card-main { display: flex; gap: 12px; }
+.itinerary-scope .card { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-left: 5px solid var(--activity); border-radius: 8px; }
+.itinerary-scope .card.type-flight { border-left-color: var(--flight); }
+.itinerary-scope .card.type-lodging { border-left-color: var(--lodging); }
+.itinerary-scope .card.proposed { opacity: .6; background: #fafbff; border-style: dashed; border-left-style: solid; }
+.itinerary-scope .card.conflict { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
+.itinerary-scope .card-main { display: flex; gap: 12px; }
 .icon { font-size: 1.4rem; }
 .title-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .when { margin: 2px 0; }
 .tag { font-size: .72rem; padding: 2px 8px; border-radius: 999px; background: #eef0f8; color: var(--muted); }
 .tag-proposed { background: #e0e7ff; color: #3730a3; }
 .tag-conflict { background: var(--danger); color: #fff; font-weight: 600; }
-.card-actions { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; }
+.itinerary-scope .card-actions { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; }
 
 .members { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
 .members h2 { margin: 0 0 10px; font-size: 1.05rem; }

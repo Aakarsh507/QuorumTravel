@@ -1,0 +1,60 @@
+/* Existing workflow controls use the tokens and geometry from the supplied Make export. */
+:root { --q-ink: var(--ink); --q-ink-soft: var(--muted); --q-bg: var(--canvas); --q-surface: var(--surface); --q-line: var(--line); --q-brand: var(--teal); --q-brand-dark: var(--teal-dark); --q-mint: var(--teal-soft); --q-mint-ink: var(--teal-dark); --q-navy: var(--navy); --brand: var(--teal); --border: var(--line); --text: var(--ink); }
+a { text-decoration: none; }
+h1, h2, h3 { color: inherit; }
+button, input, select, textarea { font-family: inherit; }
+button:disabled { cursor: not-allowed; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.skip:focus { z-index: 300; }
+.q-who { gap: 7px; }
+.q-who select { max-width: 175px; color: var(--ink); border: 0; background: transparent; font-size: 12px; font-weight: 700; padding: 7px 3px; }
+.q-dev-tag { font-size: 9px; padding: 3px 6px; }
+.sidebar nav a { min-height: 43px; padding: 0 11px; border-radius: 9px; display: flex; align-items: center; gap: 11px; color: #526873; font-size: 13px; font-weight: 600; }
+.sidebar nav a.active { background: white; color: var(--teal); box-shadow: var(--shadow-sm); }
+.sidebar nav a:hover { background: rgba(255,255,255,.72); }
+.filter-btn select { border: 0; padding: 0; color: inherit; font-size: inherit; background: transparent; }
+.destination-placeholder { width: 100%; height: 100%; display: grid; place-items: center; color: #c8e7e0; background: linear-gradient(120deg, #173746, #448c80); }
+.card { display: block; }
+.hero-gradient h2, .plan-hero h2, .vote-card h3 { color: white; }
+.hero-gradient .destination-placeholder { position: absolute; inset: 0; }
+.page-content { width: 100%; }
+.q-content { max-width: 100%; }
+.content-grid .btn { margin-top: 14px; }
+.q-danger { font-size: 12px; }
+.q-narrow { max-width: 888px; }
+.q-page { padding-top: 45px; }
+.q-panel h1 { font-family: Manrope, sans-serif; font-size: 26px; margin-bottom: 12px; }
+.q-panel > .q-muted { margin-bottom: 24px; font-size: 13px; }
+.q-stepper { padding: 0; list-style: none; gap: 12px; }
+.q-stepper li { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.q-step-num { width: 28px; height: 28px; }
+.q-field { font-size: 13px; margin-bottom: 18px; }
+.q-field input { font-size: 14px; min-width: 0; min-height: 45px; border-radius: 9px; }
+.q-btn { min-height: 42px; padding: 0 18px; font-size: 14px; border-radius: 10px; }
+.q-btn-ghost { padding: 0 8px; color: var(--teal); }
+.q-btn-primary { background: var(--teal); color: white; }
+.q-btn-primary:hover { background: var(--teal-dark); }
+.q-actions { margin-top: 24px; }
+.q-fieldset.pref-section { border: 0; border-bottom: 1px solid var(--soft-line); border-radius: 0; padding: 0 0 24px; margin: 0 0 24px; }
+.pref-section { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid var(--soft-line); }
+.pref-section legend { float: left; display: flex; align-items: center; gap: 12px; padding: 0; width: 100%; margin-bottom: 8px; font-size: 15px; }
+.section-number { width: 26px; height: 26px; border-radius: 7px; background: var(--teal-soft); color: var(--teal); display: inline-grid; place-items: center; font-size: 11px; }
+.section-description { clear: both; color: var(--muted); font-size: 11px; margin: 0 0 18px 38px; }
+.q-date-row { grid-template-columns: 1fr 1fr auto; align-items: center; }
+.q-input-prefix { max-width: 330px; }
+.q-input-prefix input { width: 100%; }
+.q-chips { gap: 9px; }
+.q-chip { min-width: 95px; border-radius: 9px; padding: 11px 15px; font-size: 12px; color: var(--muted); }
+.q-chip.on { color: var(--teal); border-color: var(--teal); background: var(--teal-soft); }
+.pref-form > .q-actions { border-top: 0; }
+.readiness-card, .conflict-card { max-width: 100%; }
+.readiness-list .q-muted { color: var(--muted); }
+.match-pills { flex-wrap: wrap; }
+.cost-list b { text-align: right; max-width: 60%; }
+.q-review { font-size: 13px; }
+.itinerary-scope .card { display: flex; border-left-width: 5px; }
+.itinerary-scope .card h3 { font-family: 'DM Sans', sans-serif; }
+.itinerary-scope .when { font-size: 13px; }
+.itinerary-scope button.primary:hover { background: var(--teal-dark); }
+
+.plan-hero > .destination-placeholder { position: static; padding: 0; display: grid; place-items: center; background: linear-gradient(120deg, #173746, #448c80); }

@@ -3,11 +3,11 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
 import { useLoad, useSession } from "../session";
 
-const STEPS = ["Trip details", "Invite members", "Review & create"] as const;
+const STEPS = ["Trip details", "Invite members", "Review & finish"] as const;
 
 function Stepper({ current }: { current: number }) {
   return (
-    <ol className="q-stepper" aria-label="Create trip progress">
+    <ol className="q-stepper wizard-steps" aria-label="Create trip progress">
       {STEPS.map((s, i) => (
         <li key={s} className={i === current ? "active" : i < current ? "done" : undefined} aria-current={i === current ? "step" : undefined}>
           <span className="q-step-num">{i + 1}</span> {s}
@@ -40,7 +40,7 @@ export function NewTripPage() {
 
   return (
     <main id="main" className="q-page q-wrap q-narrow">
-      <form className="q-panel" onSubmit={submit} noValidate>
+      <form className="q-panel wizard-card" onSubmit={submit} noValidate>
         <Stepper current={0} />
         <h1>Where's the group headed?</h1>
         <p className="q-muted">Give the trip a name. You can let the group pick the destination later.</p>
@@ -79,7 +79,7 @@ export function TripSetupPage() {
   if (!trip) return <main className="q-page q-wrap"><p>Loading…</p></main>;
 
   const link = `${window.location.origin}/join/${trip.inviteCode}`;
-  const shortLink = `quorum.app/join/${trip.inviteCode.slice(0, 10)}`;
+  const shortLink = link;
 
   async function addEmails(e: React.FormEvent) {
     e.preventDefault();
@@ -96,7 +96,13 @@ export function TripSetupPage() {
   }
 
   async function copy() {
-    await navigator.clipboard?.writeText(link).catch(() => undefined);
+    try {
+      if (!navigator.clipboard) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(link);
+    } catch {
+      setEmailError("Could not copy automatically. Select and copy the invitation link above.");
+      return;
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -104,7 +110,7 @@ export function TripSetupPage() {
   if (step === "review") {
     return (
       <main id="main" className="q-page q-wrap q-narrow">
-        <div className="q-panel">
+        <div className="q-panel wizard-card">
           <Stepper current={2} />
           <h1>Ready to start planning?</h1>
           <dl className="q-review">
@@ -120,7 +126,7 @@ export function TripSetupPage() {
           <p className="q-muted q-small">Next, add your own travel preferences. Everyone's budget and dates stay private.</p>
           <div className="q-actions">
             <Link to={`/trips/${tripId}/setup/invite`} className="q-btn">Back</Link>
-            <button className="q-btn q-btn-primary" onClick={() => navigate(`/trips/${tripId}/preferences`)}>Create trip</button>
+            <button className="q-btn q-btn-primary" onClick={() => navigate(`/trips/${tripId}/preferences`)}>Start planning</button>
           </div>
         </div>
       </main>
@@ -129,7 +135,7 @@ export function TripSetupPage() {
 
   return (
     <main id="main" className="q-page q-wrap q-narrow">
-      <div className="q-panel">
+      <div className="q-panel wizard-card">
         <Stepper current={1} />
         <h1>Who's coming?</h1>
         <div className="q-highlight q-row">
