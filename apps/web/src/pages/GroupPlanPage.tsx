@@ -21,8 +21,7 @@ import type { FeasiblePlan, VoteChoice } from "@quorum/shared";
 import { ApiError, api, type PlanView, type Readiness } from "../api";
 import { Pill, type TripContext } from "../components/Layout";
 import { useLoad, useSession } from "../session";
-
-const POLL_MS = 3000; // other members' votes / submissions show up without a reload
+import { usePlanUpdates, type LiveState } from "../usePlanUpdates";
 
 const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
 
@@ -36,16 +35,14 @@ const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
 export function GroupPlanPage() {
   const { trip, reloadTrip } = useOutletContext<TripContext>();
   const { userId } = useSession();
-  const readiness = useLoad(
-    () => api.readiness(userId, trip.id),
-    [userId, trip.id],
-    POLL_MS,
-  );
-  const plan = useLoad(
-    () => api.plan(userId, trip.id),
-    [userId, trip.id],
-    POLL_MS,
-  );
+  const readiness = useLoad(() => api.readiness(userId, trip.id), [userId, trip.id]);
+  const plan = useLoad(() => api.plan(userId, trip.id), [userId, trip.id]);
+  // Other members' submissions and votes arrive over Socket.IO (plan:changed), not polling.
+  const live = usePlanUpdates(userId, trip.id, () => {
+    readiness.reload();
+    plan.reload();
+    reloadTrip();
+  });
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -75,10 +72,11 @@ export function GroupPlanPage() {
   if (!readiness.data || !plan.data) return <p>Loading group plan…</p>;
 
   const p = plan.data.plan;
-  const banner = actionError && (
-    <p role="alert" className="q-banner q-banner-error">
-      {actionError}
-    </p>
+  const banner = (
+    <>
+      <LiveBadge state={live} />
+      {actionError && <p role="alert" className="q-banner q-banner-error">{actionError}</p>}
+    </>
   );
 
   if (p?.status === "CONFIRMED" && p.result.feasible) {
@@ -111,6 +109,19 @@ export function GroupPlanPage() {
     />
   );
 }
+
+/** Same look as the itinerary's sync badge, so members can tell updates are live. */
+function LiveBadge({ state }: { state: LiveState }) {
+  const text = { connecting: "Connecting…", live: "Live updates on", offline: "Offline – reconnecting" }[state];
+  return (
+    <p className={`sync sync-${state}`} role="status">
+      <span className="dot" aria-hidden="true" />
+      {text}
+    </p>
+  );
+}
+
+/* --------------------------------------------------- 4. Ready to generate */
 
 function ReadyToGenerate(props: {
   readiness: Readiness;

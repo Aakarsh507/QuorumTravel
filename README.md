@@ -22,7 +22,7 @@ Aakarsh Gupta · Dylan Patel · Roshan Patel · Zachary Krause
 - **Group plan solver** (`packages/shared/src/planning.ts`): finds the longest window when everyone is free, keeps only destinations whose estimated cost (distance-based airfare + lodging + daily spend) fits **every** member's budget, then scores them by shared preference tags. If nothing fits, it says whether **dates** or **budget** is the conflict and suggests a fix, without revealing anyone's private values.
 - Preferences are validated by one zod schema used in **both** the browser and the server (field-level errors, bundled IATA airport list).
 - No API route returns another member's preferences. Readiness only shows who has submitted.
-- Majority vote (more than half of members) confirms or rejects the plan. The plan page polls every 3 s, so votes from other windows appear without a reload.
+- Majority vote (more than half of members) confirms or rejects the plan. The plan page gets live updates over Socket.IO (`plan:changed`, members only, no private data in the event), so submissions and votes from other windows appear instantly without polling.
 - Flights / Stays tabs are placeholders for SYS-03.
 
 **SYS-04 Shared Itinerary** (FR-401, FR-402, FR-405, NFR-401, NFR-403). Plan: [doc/SYS-04-itinerary-plan.md](doc/SYS-04-itinerary-plan.md).
@@ -78,6 +78,7 @@ Server tests use a throwaway `prisma/test.db`, never `dev.db`.
 | FR-201 | 20 synthetic feasible groups: plan meets every member's dates and budget |
 | FR-202 | 10 infeasible groups: conflict type named, no private values in the report |
 | FR-203 | groups of 3–6: majority confirms, fewer does not; rejecting majority rejects; voting closes |
+| SYS-02 live updates | a vote reaches a second member's socket as `plan:changed` in under 5 s (10 trials); preference save / generate / join also push; event holds no private values; other trips and non-members get nothing |
 | NFR-201 | 50 synthetic groups of 2–10, p95 solver time under 10 s |
 | FR-401 | seeded fixture loaded by 3 members x 5 runs, chronological order |
 | FR-402 | 10 trials, 2 other sessions, each under 5 s |

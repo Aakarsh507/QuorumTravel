@@ -6,6 +6,8 @@ import { z } from "zod";
 import {
   SOCKET_EVENTS,
   itemInputSchema,
+  type PlanChangeReason,
+  type PlanChangedEvent,
   itemPatchSchema,
   type ItineraryItem,
 } from "@quorum/shared";
@@ -36,6 +38,16 @@ export async function createApp({ prisma, webOrigin = "http://localhost:5173", e
 
   async function broadcast(tripId: string) {
     io.to(room(tripId)).emit(SOCKET_EVENTS.snapshot, await loadSnapshot(prisma, tripId));
+  }
+
+  /**
+   * SYS-02 live updates: tell every member in the trip's room that readiness or
+   * the plan changed. Same room as the itinerary, so the membership check in
+   * io.use below also guards this event. The payload holds no private data.
+   */
+  function notifyPlanChanged(tripId: string, reason: PlanChangeReason) {
+    const event: PlanChangedEvent = { tripId, reason };
+    io.to(room(tripId)).emit(SOCKET_EVENTS.planChanged, event);
   }
 
   // ---- socket: only verified trip members may join the room (access control)
@@ -251,7 +263,7 @@ export async function createApp({ prisma, webOrigin = "http://localhost:5173", e
   );
 
   // ---- SYS-01 / SYS-02: trips, invites, private preferences, group plan + votes
-  registerPlanningRoutes(app, prisma);
+  registerPlanningRoutes(app, prisma, { notifyPlanChanged });
 
   return {
     app,
