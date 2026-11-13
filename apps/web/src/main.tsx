@@ -8,6 +8,7 @@ import { NewTripPage, TripSetupPage } from "./pages/TripSetupPage";
 import { PreferencesPage } from "./pages/PreferencesPage";
 import { GroupPlanPage } from "./pages/GroupPlanPage";
 import { ComingSoonPage, JoinPage, TripOverviewPage, MembersPage } from "./pages/TripPages";
+import { ExplorePage } from "./pages/ExplorePage";
 import { ItineraryRoute } from "./pages/ItineraryPage";
 import "./styles.css";
 import "./design.css";
@@ -39,9 +40,9 @@ createRoot(document.getElementById("root")!).render(
               <Route path="stays" element={<ComingSoonPage title="Stays" system="SYS-03" />} />
               <Route path="itinerary" element={<ItineraryRoute />} />
               <Route path="members" element={<MembersPage />} />
-              <Route path="explore" element={<ComingSoonPage title="Explore" system="SYS-05" />} />
-              <Route path="assistant" element={<ComingSoonPage title="AI Assistant" system="SYS-06" />} />
-              <Route path="expenses" element={<ComingSoonPage title="Expenses" system="SYS-08" />} />
+              <Route path="explore" element={<ExplorePage />} />
+              <Route path="assistant" element={<ComingSoonPage title="AI Assistant" system="SYS-05" />} />
+              <Route path="expenses" element={<ComingSoonPage title="Expenses" system="SYS-06" />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
