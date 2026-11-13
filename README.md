@@ -91,4 +91,35 @@ Server tests use a throwaway `prisma/test.db`, never `dev.db`.
 
 The planning workflow uses the laptop/web layout from [Proposed UI/UX](https://www.figma.com/make/PS0sE9rDcH031bP6FGxSmK/Proposed-UI-UX): the trip dashboard, setup wizard, sidebar, overview, private preferences, readiness, conflict, voting, and approval screens. The original destination photographs and favicon are stored under `apps/web/public`. Shared presentation components are in `components/Design.tsx`; `figma.css` contains the exported design rules and `integration.css` adapts the existing controls.
 
-The screens read and write the existing API. Trip counts, readiness, estimates, and vote totals come from server data. The Figma export's hardcoded trips and local-storage planner are not used. Destinations without a supplied photograph have a neutral cover. The existing demo-user switcher remains available for testing collaboration; production authentication is still pending. Flights, Stays, Explore, AI Assistant, and Expenses are visible navigation destinations with explicit placeholder pages. The existing shared itinerary keeps its real-time and permission behavior within the new shell. Mobile layout work is outside this change.
+The screens read and write the existing API. Trip counts, readiness, estimates, and vote totals come from server data. The Figma export's hardcoded trips and local-storage planner are not used. Destinations without a supplied photograph have a neutral cover. The existing demo-user switcher remains available for testing collaboration; production authentication is still pending. Flights, Stays, AI Assistant, and Expenses are visible navigation destinations with explicit placeholder pages. Explore provides place search and map selection; see setup below. The existing shared itinerary keeps its real-time and permission behavior within the new shell. Mobile layout work is outside this change.
+
+## Explore: Google Maps and Places
+
+Explore runs at `/trips/:tripId/explore` within the trip layout. It supports text search, names/addresses, and selecting a result to focus the map. It does not save places or modify the itinerary. System labels follow the checked-in SDP: SYS-05 is the Grounded Chat Agent (AI Assistant), SYS-06 is Expense Ledger & Settlement, and SYS-08 is in-app booking. Explore is a supporting place-discovery page without an assigned SDP system ID; it does not implement the chat-agent requirements. The assignment branch retains its originally requested name, `feat/sys-05-explore-places`.
+
+### Browser key setup
+
+Create `apps/web/.env.local` using the empty `apps/web/.env.example` as a reference:
+
+```dotenv
+VITE_GOOGLE_MAPS_API_KEY=your_restricted_browser_key
+```
+
+Use a Google Cloud project with billing, **Maps JavaScript API** and **Places API (New)** enabled. Restrict the browser key to those APIs and to your development website referrer (`http://localhost:5173/*`; add `http://127.0.0.1:5173/*` only if used). Set appropriate quotas/billing alerts. Restart `npm run dev:web` after changing the environment; production builds need the variable at build time. Vite reads this file from `apps/web`, not the monorepo root. Never commit a real key or a populated environment file. A browser key is visible in browser requests and must be restricted; it is not a server secret. Advanced Markers use Google's `DEMO_MAP_ID` for this development increment.
+
+The suggested search area comes from the existing proposed/confirmed feasible group plan. It is editable and can be cleared. No destination is inferred from a trip name. Without a plan destination (or if its request fails), search still works by entering an area or a complete query such as `museums in Chicago`. Category shortcuts fill the query without making a request until Search is pressed. The map starts with a broad view and focuses only when a result is selected. Loading and search requests time out after 15 seconds with retry guidance. Maps authentication failures and map initialization failures show the configuration/error state.
+
+### Reuse and validation
+
+Adapted from [Roshan's earlier prototype](https://github.com/roshpat/quorum-travel-planner): `src/services/googleMaps.ts` (cached `setOptions`/`importLibrary` loader, `Place.searchByText`, plain coordinates), `PlaceSearch.tsx` (submit and result selection), and `GoogleMap.tsx` (Advanced Marker, `panTo`, zoom 15). The team version uses outlet trip context, the existing plan API and CSS tokens. It omits the prototype's travel provider, saved markers, persistence, and itinerary actions. Search requests only ID, display name, formatted address, and location.
+
+From the repository root, run `npm run db:generate -w @quorum/server`, `npm run typecheck`, `npm test`, `npm run build`, and `git diff --check`. None requires a Maps key. Existing tests cover shared/server behavior; Explore requires browser checks:
+
+1. Start `npm run dev:server` and `npm run dev:web` with existing local demo data. Open a trip's Explore tab.
+2. With a working Maps key, search `museums` near `Chicago`. Verify names and addresses. Select two different results; each should highlight and center a marker at zoom 15.
+3. Try a query with no matches; confirm no-results guidance. For a repeatable failed-search check, block Places requests in browser developer tools after Maps loads, submit, confirm the failure message, unblock, and retry.
+4. Check a trip without a destination: the area is empty and a full query still works. Check a proposed/confirmed plan: its city/state prefill the area, which remains editable.
+5. Remove the key from the local file and restart Vite. Confirm setup directions, no Google request, and usable trip navigation. Restore the key locally afterward.
+6. Block the Maps script before opening Explore to check the load error/retry. Check keyboard selection, visible focus, loading feedback, and navigation to a different trip without stale results.
+
+Capture screenshots of results, a selected result with its map marker, no-results or failed-search feedback, and missing-key directions. Live Google results and map focus require a working key and network; mocked checks do not establish live API success.
