@@ -82,6 +82,8 @@ QuorumTravel/
 
 ## 2. Branching and workflow model
 
+> **Current practice (November 2026):** `dev` is not in use yet. Topic branches are created from the latest `main`, and their PRs target `main` with **1 approval** and green CI (PRs #5–#7 followed this). The `main` + `dev` model below is the plan for once we start cutting milestone releases; until then, read "`dev`" in sections 2.2, 2.5 and 3 as "`main`".
+
 We use a **two-long-lived-branch model**. It is a simplified Git Flow: `main` + `dev` plus short-lived topic branches, with no separate release branches.
 
 ```
@@ -160,7 +162,7 @@ If `dev` has moved on while you work, run `git merge dev` into your branch (do n
 | Rule | Detail |
 |---|---|
 | Everything goes through a PR | No direct pushes to `dev` or `main` (enforced by branch protection) |
-| Target | Feature / fix / docs PRs → `dev`. Release PRs → `main` |
+| Target | Feature / fix / docs PRs → `dev`. Release PRs → `main`. (For now, everything targets `main`; see the note in section 2.) |
 | Link the task | PR description says `Closes #<issue>` so the Project card moves to Done on merge |
 | Template | Fill in every section of `.github/pull_request_template.md` (what, why, how tested, screenshots for UI) |
 | Size | Aim for under ~400 changed lines (excluding lock files and seed data). Bigger work is split |
