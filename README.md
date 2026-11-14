@@ -23,6 +23,7 @@ Aakarsh Gupta · Dylan Patel · Roshan Patel · Zachary Krause
 - Preferences are validated by one zod schema used in **both** the browser and the server (field-level errors, bundled IATA airport list).
 - No API route returns another member's preferences. Readiness only shows who has submitted.
 - Majority vote (more than half of members) confirms or rejects the plan. The plan page gets live updates over Socket.IO (`plan:changed`, members only, no private data in the event), so submissions and votes from other windows appear instantly without polling.
+- **Re-solve on change (FR-204):** if a member changes their preferences after a plan was generated, the plan is marked outdated (re-saving identical values does not count). Every member sees a notice on the Group plan page, the trip card reads "Plan outdated", voting on a proposed plan is paused, and the organizer regenerates it. A confirmed plan stays confirmed until regenerated. Nobody is told which member changed.
 - Flights / Stays tabs are placeholders for SYS-03.
 
 **SYS-04 Shared Itinerary** (FR-401, FR-402, FR-405, NFR-401, NFR-403). Plan: [doc/SYS-04-itinerary-plan.md](doc/SYS-04-itinerary-plan.md).
@@ -78,6 +79,7 @@ Server tests use a throwaway `prisma/test.db`, never `dev.db`.
 | FR-201 | 20 synthetic feasible groups: plan meets every member's dates and budget |
 | FR-202 | 10 infeasible groups: conflict type named, no private values in the report |
 | FR-203 | groups of 3–6: majority confirms, fewer does not; rejecting majority rejects; voting closes |
+| FR-204 | a real change marks the plan outdated for all members (not who changed); identical re-save does not; voting paused; only the organizer regenerates and votes restart; confirmed and infeasible plans are flagged too |
 | SYS-02 live updates | a vote reaches a second member's socket as `plan:changed` in under 5 s (10 trials); preference save / generate / join also push; event holds no private values; other trips and non-members get nothing |
 | NFR-201 | 50 synthetic groups of 2–10, p95 solver time under 10 s |
 | FR-401 | seeded fixture loaded by 3 members x 5 runs, chronological order |

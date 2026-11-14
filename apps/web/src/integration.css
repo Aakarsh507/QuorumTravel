@@ -78,3 +78,7 @@ button:disabled { cursor: not-allowed; }
 
 .explore-categories { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
 .explore-categories .q-chip { min-width: 0; padding: 7px 10px; font-size: 12px; }
+
+/* FR-204 outdated-plan notice on the Group plan page */
+.outdated-notice strong { display: block; }
+.outdated-notice .btn { margin-top: 10px; }

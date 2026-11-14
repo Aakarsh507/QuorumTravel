@@ -94,6 +94,8 @@ model GroupPlan {
   result      String   // JSON PlanResult (contains no private values)
   createdById String
   createdAt   DateTime @default(now())
+  /// FR-204: set when a member changes their preferences after this plan was generated. Null = current.
+  outdatedAt  DateTime?
   trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
   votes       Vote[]
 }
