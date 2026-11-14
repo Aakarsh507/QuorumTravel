@@ -347,8 +347,12 @@ function PlanScreen({
         }
         subtitle="Based on everyone’s private preferences and current demo estimates."
         action={
-          <Pill tone={confirmed ? "good" : "info"}>
-            {confirmed ? "Majority approved" : "Voting open"}
+          <Pill tone={confirmed ? "good" : plan.outdated ? "warn" : "info"}>
+            {confirmed
+              ? "Majority approved"
+              : plan.outdated
+                ? "Voting paused"
+                : "Voting open"}
           </Pill>
         }
       />
