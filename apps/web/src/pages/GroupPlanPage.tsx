@@ -3,6 +3,7 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
+  RefreshCw,
   Sparkles,
   TriangleAlert,
   X,
@@ -17,7 +18,7 @@ import {
 } from "../components/Design";
 import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
-import type { FeasiblePlan, VoteChoice } from "@quorum/shared";
+import type { FeasiblePlan, PlanStatus, VoteChoice } from "@quorum/shared";
 import { ApiError, api, type PlanView, type Readiness } from "../api";
 import { Pill, type TripContext } from "../components/Layout";
 import { useLoad, useSession } from "../session";
@@ -31,6 +32,9 @@ const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
  *   no plan / rejected / infeasible -> 4. Ready to generate
  *   PROPOSED                        -> 5. Review and vote
  *   CONFIRMED                       -> 6. Majority approved
+ * FR-204: if anyone changed their preferences after the plan was generated,
+ * every screen shows an "outdated" notice and voting is paused until the
+ * organizer regenerates.
  */
 export function GroupPlanPage() {
   const { trip, reloadTrip } = useOutletContext<TripContext>();
@@ -72,15 +76,32 @@ export function GroupPlanPage() {
   if (!readiness.data || !plan.data) return <p>Loading group plan…</p>;
 
   const p = plan.data.plan;
+  const creatorName =
+    trip.members.find((m) => m.role === "CREATOR")?.displayName ??
+    "the organizer";
+  const onGenerate = () => act(() => api.generatePlan(userId, trip.id));
+  // Screens 5 and 6 have no generate button of their own, so the notice carries one.
+  const hasOwnGenerate = !(p?.status === "PROPOSED" || p?.status === "CONFIRMED") || !p.result.feasible;
+  const notice = p?.outdated && (
+    <OutdatedNotice
+      status={p.status}
+      canRegenerate={readiness.data.canGenerate && !hasOwnGenerate}
+      isOrganizer={trip.me.role === "CREATOR"}
+      creatorName={creatorName}
+      busy={busy}
+      onRegenerate={onGenerate}
+    />
+  );
   const banner = (
     <>
       <LiveBadge state={live} />
       {actionError && <p role="alert" className="q-banner q-banner-error">{actionError}</p>}
+      {notice}
     </>
   );
 
   if (p?.status === "CONFIRMED" && p.result.feasible) {
-    return <Confirmed trip={trip} plan={p} result={p.result} />;
+    return <Confirmed trip={trip} plan={p} result={p.result} banner={notice} />;
   }
   if (p?.status === "PROPOSED" && p.result.feasible) {
     return (
@@ -98,14 +119,11 @@ export function GroupPlanPage() {
     <ReadyToGenerate
       readiness={readiness.data}
       plan={p}
-      creatorName={
-        trip.members.find((m) => m.role === "CREATOR")?.displayName ??
-        "the organizer"
-      }
+      creatorName={creatorName}
       tripId={trip.id}
       busy={busy}
       banner={banner}
-      onGenerate={() => act(() => api.generatePlan(userId, trip.id))}
+      onGenerate={onGenerate}
     />
   );
 }
@@ -118,6 +136,48 @@ function LiveBadge({ state }: { state: LiveState }) {
       <span className="dot" aria-hidden="true" />
       {text}
     </p>
+  );
+}
+
+/** FR-204: the plan was solved from preferences that have since changed. */
+function OutdatedNotice(props: {
+  status: PlanStatus;
+  canRegenerate: boolean;
+  isOrganizer: boolean;
+  creatorName: string;
+  busy: boolean;
+  onRegenerate: () => void;
+}) {
+  const consequence =
+    props.status === "PROPOSED"
+      ? "Voting is paused until a new plan is generated."
+      : props.status === "CONFIRMED"
+        ? "It stays confirmed until a new plan is generated."
+        : "A new plan may now work for everyone.";
+  const next = props.isOrganizer
+    ? "Generate a new plan to include the latest preferences."
+    : `Waiting for ${props.creatorName} to generate a new plan.`;
+  return (
+    <div className="alert alert-warning outdated-notice" role="status">
+      <RefreshCw size={17} />
+      <div>
+        <strong>This plan is out of date</strong>
+        <p>
+          A traveler updated their preferences after this plan was generated.{" "}
+          {consequence} {next}
+        </p>
+        {props.canRegenerate && (
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={props.busy}
+            onClick={props.onRegenerate}
+          >
+            <RefreshCw size={15} />
+            {props.busy ? "Regenerating…" : "Regenerate plan"}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -287,8 +347,12 @@ function PlanScreen({
         }
         subtitle="Based on everyone’s private preferences and current demo estimates."
         action={
-          <Pill tone={confirmed ? "good" : "info"}>
-            {confirmed ? "Majority approved" : "Voting open"}
+          <Pill tone={confirmed ? "good" : plan.outdated ? "warn" : "info"}>
+            {confirmed
+              ? "Majority approved"
+              : plan.outdated
+                ? "Voting paused"
+                : "Voting open"}
           </Pill>
         }
       />
@@ -451,7 +515,7 @@ function PlanScreen({
               <div className="vote-actions">
                 <button
                   className="btn btn-primary btn-md"
-                  disabled={busy || plan.myVote === "APPROVE"}
+                  disabled={busy || plan.outdated || plan.myVote === "APPROVE"}
                   onClick={() => onVote?.("APPROVE")}
                 >
                   <Check size={17} />
@@ -459,14 +523,14 @@ function PlanScreen({
                 </button>
                 <button
                   className="btn btn-secondary btn-md"
-                  disabled={busy || plan.myVote === "REJECT"}
+                  disabled={busy || plan.outdated || plan.myVote === "REJECT"}
                   onClick={() => onVote?.("REJECT")}
                 >
                   <X size={17} />
                   Reject
                 </button>
               </div>
-              {plan.myVote && (
+              {plan.myVote && !plan.outdated && (
                 <p role="status">
                   You voted to {plan.myVote === "APPROVE" ? "accept" : "reject"}
                   . You can change your vote while voting is open.
@@ -493,6 +557,7 @@ function Confirmed(props: {
   trip: TripContext["trip"];
   plan: LivePlan;
   result: FeasiblePlan;
+  banner?: React.ReactNode;
 }) {
   return <PlanScreen {...props} />;
 }

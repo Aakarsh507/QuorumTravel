@@ -234,3 +234,73 @@ describe("FR-203 plan voting (screens 5–6)", () => {
     expect((await api("POST", `/trips/${t.nash}/plan/vote`, outsider, { choice: "APPROVE" })).status).toBe(403);
   });
 });
+
+describe("FR-204 re-solve on change", () => {
+  async function proposeMiami() {
+    await api("PUT", `/trips/${t.miami}/preferences/me`, u.alex, alexPrefs);
+    const gen = await api("POST", `/trips/${t.miami}/plan/generate`, u.alex);
+    expect(gen.json.plan).toMatchObject({ status: "PROPOSED", outdated: false, outdatedAt: null });
+  }
+
+  it("a member changing preferences marks the plan outdated for everyone, without saying who", async () => {
+    await proposeMiami();
+    const mayaPrefs = { ...alexPrefs, departureAirport: "ORD", maxBudgetUsd: 1777 };
+    expect((await api("PUT", `/trips/${t.miami}/preferences/me`, u.maya, mayaPrefs)).status).toBe(200);
+
+    for (const viewer of [u.alex, u.jordan, u.priya]) {
+      const r = await api("GET", `/trips/${t.miami}/plan`, viewer);
+      expect(r.json.plan).toMatchObject({ status: "PROPOSED", outdated: true });
+      expect(typeof r.json.plan.outdatedAt).toBe("string");
+      expect(r.text).not.toContain(u.maya);
+      expect(r.text).not.toContain("1777");
+    }
+    const trips = await api("GET", "/me/trips", u.jordan);
+    expect(trips.json.find((x: { id: string }) => x.id === t.miami).status).toEqual({ label: "Plan outdated", tone: "warn" });
+  });
+
+  it("re-saving identical preferences does not mark the plan outdated", async () => {
+    await proposeMiami();
+    await api("PUT", `/trips/${t.miami}/preferences/me`, u.alex, { ...alexPrefs, tags: ["food", "nightlife"] });
+    expect((await api("GET", `/trips/${t.miami}/plan`, u.alex)).json.plan.outdated).toBe(false);
+  });
+
+  it("a first submission after the plan was generated also marks it outdated", async () => {
+    await proposeMiami();
+    await api("PUT", `/trips/${t.miami}/preferences/me`, u.sam, alexPrefs);
+    expect((await api("GET", `/trips/${t.miami}/plan`, u.alex)).json.plan.outdated).toBe(true);
+  });
+
+  it("voting is paused on an outdated plan and existing votes are kept", async () => {
+    await proposeMiami();
+    await api("POST", `/trips/${t.miami}/plan/vote`, u.jordan, { choice: "APPROVE" });
+    await api("PUT", `/trips/${t.miami}/preferences/me`, u.maya, { ...alexPrefs, maxBudgetUsd: 1600 });
+    const v = await api("POST", `/trips/${t.miami}/plan/vote`, u.priya, { choice: "APPROVE" });
+    expect(v.status).toBe(409);
+    expect(v.json.error).toMatch(/regenerate/);
+    expect((await api("GET", `/trips/${t.miami}/plan`, u.alex)).json.plan).toMatchObject({ approvals: 1, outdated: true });
+  });
+
+  it("only the organizer can regenerate; the new plan is current and votes start over", async () => {
+    await proposeMiami();
+    await api("POST", `/trips/${t.miami}/plan/vote`, u.jordan, { choice: "APPROVE" });
+    await api("PUT", `/trips/${t.miami}/preferences/me`, u.maya, { ...alexPrefs, maxBudgetUsd: 1600 });
+
+    expect((await api("POST", `/trips/${t.miami}/plan/generate`, u.maya)).status).toBe(403);
+    const gen = await api("POST", `/trips/${t.miami}/plan/generate`, u.alex);
+    expect(gen.status).toBe(201);
+    expect(gen.json.plan).toMatchObject({ status: "PROPOSED", outdated: false, approvals: 0, myVote: null });
+    expect((await api("POST", `/trips/${t.miami}/plan/vote`, u.priya, { choice: "APPROVE" })).status).toBe(200);
+  });
+
+  it("a confirmed plan is flagged outdated but stays confirmed until regenerated", async () => {
+    await api("PUT", `/trips/${t.nash}/preferences/me`, u.sam, { ...alexPrefs, maxBudgetUsd: 2500 });
+    const r = await api("GET", `/trips/${t.nash}/plan`, u.maya);
+    expect(r.json.plan).toMatchObject({ status: "CONFIRMED", outdated: true });
+  });
+
+  it("an infeasible plan is flagged outdated so the organizer knows to try again", async () => {
+    await api("PUT", `/trips/${t.ash}/preferences/me`, u.priya, { ...alexPrefs, maxBudgetUsd: 2000 });
+    const r = await api("GET", `/trips/${t.ash}/plan`, u.alex);
+    expect(r.json.plan).toMatchObject({ status: "INFEASIBLE", outdated: true });
+  });
+});

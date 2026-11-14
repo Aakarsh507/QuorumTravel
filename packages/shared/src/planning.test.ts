@@ -5,6 +5,7 @@ import {
   PREFERENCE_TAGS,
   estimateCost,
   preferenceInputSchema,
+  samePreferences,
   solveGroupPlan,
   tallyStatus,
   type PlanInputMember,
@@ -195,5 +196,31 @@ describe("NFR-201 solver time", () => {
     }
     times.sort((a, b) => a - b);
     expect(times[Math.floor(times.length * 0.95)]!).toBeLessThan(10_000);
+  });
+});
+
+describe("FR-204 detecting a real preference change", () => {
+  const base = {
+    dateRanges: [
+      { start: "2027-03-12", end: "2027-03-20" },
+      { start: "2027-04-01", end: "2027-04-05" },
+    ],
+    maxBudgetUsd: 1500,
+    departureAirport: "IND",
+    tags: ["nightlife", "food"] as ("nightlife" | "food")[],
+  };
+
+  it("identical values, or the same values in a different order, are not a change", () => {
+    expect(samePreferences(base, { ...base })).toBe(true);
+    expect(
+      samePreferences(base, { ...base, dateRanges: [...base.dateRanges].reverse(), tags: ["food", "nightlife"] }),
+    ).toBe(true);
+  });
+
+  it("any field the solver reads counts as a change", () => {
+    expect(samePreferences(base, { ...base, maxBudgetUsd: 1499 })).toBe(false);
+    expect(samePreferences(base, { ...base, departureAirport: "ORD" })).toBe(false);
+    expect(samePreferences(base, { ...base, tags: ["food"] })).toBe(false);
+    expect(samePreferences(base, { ...base, dateRanges: [{ start: "2027-03-12", end: "2027-03-21" }] })).toBe(false);
   });
 });

@@ -3,6 +3,7 @@ import type { PrismaClient, User } from "@prisma/client";
 import { z } from "zod";
 import {
   preferenceInputSchema,
+  samePreferences,
   solveGroupPlan,
   tallyStatus,
   voteInputSchema,
@@ -53,6 +54,7 @@ export function registerPlanningRoutes(
   /** Short status shown on the "Your trips" cards. */
   async function tripStatus(tripId: string, memberCount: number): Promise<{ label: string; tone: string }> {
     const plan = await prisma.groupPlan.findUnique({ where: { tripId } });
+    if (plan?.outdatedAt) return { label: "Plan outdated", tone: "warn" }; // FR-204
     if (plan?.status === "CONFIRMED") return { label: "Confirmed", tone: "good" };
     if (plan?.status === "PROPOSED") return { label: "Ready for group approval", tone: "info" };
     if (plan?.status === "REJECTED") return { label: "Plan rejected", tone: "warn" };
@@ -192,17 +194,28 @@ export function registerPlanningRoutes(
       return reply.code(400).send({ error: "Please fix the highlighted fields", fields });
     }
     const p = parsed.data;
+    const where = { tripId_userId: { tripId: req.params.tripId, userId: ctx.user.id } };
+    const before = await prisma.preference.findUnique({ where });
+    const changed = !before || !samePreferences(toPreference(before), p);
     const data = {
       dateRanges: JSON.stringify(p.dateRanges),
       maxBudgetUsd: p.maxBudgetUsd,
       departureAirport: p.departureAirport,
       tags: JSON.stringify(p.tags),
     };
-    await prisma.preference.upsert({
-      where: { tripId_userId: { tripId: req.params.tripId, userId: ctx.user.id } },
-      create: { tripId: req.params.tripId, userId: ctx.user.id, ...data },
-      update: data,
-    });
+    await prisma.$transaction([
+      prisma.preference.upsert({
+        where,
+        create: { tripId: req.params.tripId, userId: ctx.user.id, ...data },
+        update: data,
+      }),
+      // FR-204: the plan was solved from inputs that no longer hold. It is not
+      // re-solved automatically; the organizer regenerates. Re-saving the same
+      // values changes nothing. Who changed is not recorded (FR-103).
+      ...(changed
+        ? [prisma.groupPlan.updateMany({ where: { tripId: req.params.tripId, outdatedAt: null }, data: { outdatedAt: new Date() } })]
+        : []),
+    ]);
     notifyPlanChanged(req.params.tripId, "preferences"); // others only learn "submitted", never the values
     return { preference: p };
   });
@@ -242,6 +255,8 @@ export function registerPlanningRoutes(
         status: plan.status as PlanStatus,
         result: JSON.parse(plan.result) as PlanResult,
         createdAt: plan.createdAt.toISOString(),
+        outdated: plan.outdatedAt !== null,
+        outdatedAt: plan.outdatedAt?.toISOString() ?? null,
         approvals,
         rejections,
         memberCount,
@@ -294,6 +309,10 @@ export function registerPlanningRoutes(
     const plan = await prisma.groupPlan.findUnique({ where: { tripId: req.params.tripId } });
     if (!plan) return reply.code(404).send({ error: "No plan has been generated yet" });
     if (plan.status !== "PROPOSED") return reply.code(409).send({ error: `Voting is closed: this plan is ${plan.status.toLowerCase()}` });
+    if (plan.outdatedAt)
+      return reply
+        .code(409)
+        .send({ error: "Voting is paused: preferences changed after this plan was generated. The organizer needs to regenerate it." });
 
     await prisma.vote.upsert({
       where: { planId_userId: { planId: plan.id, userId: ctx.user.id } },

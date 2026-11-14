@@ -68,6 +68,9 @@ export interface PlanView {
     status: PlanStatus;
     result: PlanResult;
     createdAt: string;
+    /** FR-204: a member changed their preferences after this plan was generated. */
+    outdated: boolean;
+    outdatedAt: string | null;
     approvals: number;
     rejections: number;
     memberCount: number;

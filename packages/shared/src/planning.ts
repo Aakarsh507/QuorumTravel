@@ -240,6 +240,27 @@ export function solveGroupPlan(members: PlanInputMember[], destinations: readonl
 }
 
 /* ------------------------------------------------------------------ *
+ * SYS-02 — re-solve on change (FR-204)
+ * ------------------------------------------------------------------ */
+
+const canonical = (p: Preference) =>
+  JSON.stringify({
+    dateRanges: [...p.dateRanges].map((r) => [r.start, r.end]).sort(),
+    maxBudgetUsd: p.maxBudgetUsd,
+    departureAirport: p.departureAirport.toUpperCase(),
+    tags: [...p.tags].sort(),
+  });
+
+/**
+ * FR-204: true when two saved preferences would give the solver the same input.
+ * Order of date ranges and tags does not matter. Re-saving identical values
+ * must not mark the group plan outdated.
+ */
+export function samePreferences(a: Preference, b: Preference): boolean {
+  return canonical(a) === canonical(b);
+}
+
+/* ------------------------------------------------------------------ *
  * SYS-02 — voting (FR-203). Majority = more than half of members.
  * ------------------------------------------------------------------ */
 
