@@ -1,4 +1,5 @@
 import type {
+  FlightSearchResult,
   ItemInput,
   ItemPatch,
   ItineraryItem,
@@ -135,4 +136,7 @@ export const api = {
   generatePlan: (uid: string, tripId: string) => request<PlanView>("POST", `/trips/${tripId}/plan/generate`, uid),
   vote: (uid: string, tripId: string, choice: VoteChoice) =>
     request<PlanView>("POST", `/trips/${tripId}/plan/vote`, uid, { choice }),
+
+  // ---- SYS-03 (flight search for the confirmed plan)
+  myFlights: (uid: string, tripId: string) => request<FlightSearchResult>("GET", `/trips/${tripId}/flights/me`, uid),
 };

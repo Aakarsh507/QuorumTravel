@@ -13,6 +13,7 @@ import {
 } from "@quorum/shared";
 import { USER_HEADER, resolveUser } from "./auth";
 import { registerPlanningRoutes } from "./planning";
+import { SampleFlightProvider, registerFlightRoutes, type FlightProvider } from "./flights";
 import {
   bumpVersion,
   canManage,
@@ -26,11 +27,18 @@ export interface AppOptions {
   prisma: PrismaClient;
   webOrigin?: string;
   enableDevRoutes?: boolean;
+  /** SYS-03 flight search. Defaults to the deterministic sample provider (no network). */
+  flightProvider?: FlightProvider;
 }
 
 const room = (tripId: string) => `trip:${tripId}`;
 
-export async function createApp({ prisma, webOrigin = "http://localhost:5173", enableDevRoutes = true }: AppOptions) {
+export async function createApp({
+  prisma,
+  webOrigin = "http://localhost:5173",
+  enableDevRoutes = true,
+  flightProvider = new SampleFlightProvider(),
+}: AppOptions) {
   const app = Fastify({ logger: false });
   await app.register(cors, { origin: webOrigin });
 
@@ -264,6 +272,9 @@ export async function createApp({ prisma, webOrigin = "http://localhost:5173", e
 
   // ---- SYS-01 / SYS-02: trips, invites, private preferences, group plan + votes
   registerPlanningRoutes(app, prisma, { notifyPlanChanged });
+
+  // ---- SYS-03: flight search for the confirmed plan (FR-301, FR-303)
+  registerFlightRoutes(app, prisma, flightProvider);
 
   return {
     app,

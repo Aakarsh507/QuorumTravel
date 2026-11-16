@@ -82,3 +82,22 @@ button:disabled { cursor: not-allowed; }
 /* FR-204 outdated-plan notice on the Group plan page */
 .outdated-notice strong { display: block; }
 .outdated-notice .btn { margin-top: 10px; }
+
+/* SYS-03 flights page */
+.flight-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; margin-bottom: 18px; }
+.flight-route { display: inline-flex; align-items: center; gap: 8px; font-family: Manrope, sans-serif; font-size: 20px; }
+.flight-cap { display: flex; gap: 10px; align-items: flex-start; color: #27616f; background: #eaf5f6; border: 1px solid #d0e9ea; border-radius: 11px; padding: 10px 14px; }
+.flight-cap p { font-size: 12px; color: #52737d; margin-top: 2px; }
+.flight-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.flight-card { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(0, 2.4fr) auto; gap: 16px; align-items: center; }
+.flight-airline { display: grid; gap: 2px; }
+.flight-slices { display: grid; gap: 6px; font-size: 13px; }
+.flight-slice { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; }
+.flight-buy { display: grid; justify-items: end; gap: 8px; }
+.flight-price { font-family: Manrope, sans-serif; font-size: 22px; }
+@media (max-width: 720px) {
+  .flight-card { grid-template-columns: 1fr; }
+  .flight-buy { justify-items: start; }
+}
+.flight-duration { color: var(--ink); font-weight: 700; }
+.flight-note { margin-top: 12px; }

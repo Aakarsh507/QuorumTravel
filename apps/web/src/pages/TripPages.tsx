@@ -408,7 +408,7 @@ function DeleteTrip({
   );
 }
 
-/** Flights / Stays tabs: SYS-03 (Duffel / Booking.com search) is a later milestone. */
+/** Placeholder tabs (Stays: SYS-03 lodging search, FR-302) until each feature lands. */
 export function ComingSoonPage({ title }: { title: string; system: string }) {
   return (
     <section>

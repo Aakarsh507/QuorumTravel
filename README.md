@@ -24,7 +24,14 @@ Aakarsh Gupta · Dylan Patel · Roshan Patel · Zachary Krause
 - No API route returns another member's preferences. Readiness only shows who has submitted.
 - Majority vote (more than half of members) confirms or rejects the plan. The plan page gets live updates over Socket.IO (`plan:changed`, members only, no private data in the event), so submissions and votes from other windows appear instantly without polling.
 - **Re-solve on change (FR-204):** if a member changes their preferences after a plan was generated, the plan is marked outdated (re-saving identical values does not count). Every member sees a notice on the Group plan page, the trip card reads "Plan outdated", voting on a proposed plan is paused, and the organizer regenerates it. A confirmed plan stays confirmed until regenerated. Nobody is told which member changed.
-- Flights / Stays tabs are placeholders for SYS-03.
+- The Stays tab is a placeholder for SYS-03 lodging search (FR-302).
+
+**SYS-03 Flight Search** (FR-301, FR-303). Plan: [doc/SYS-03-flight-search-plan.md](doc/SYS-03-flight-search-plan.md).
+
+- Once the plan is confirmed, the Flights tab shows each member up to 10 of the cheapest round trips from **their own** airport on the plan dates (`GET /trips/:id/flights/me`).
+- Flight cap = the member's trip budget minus the solver's lodging and daily-spend estimate. Only that member sees it (FR-103).
+- **Book on Google Flights** opens a Google Flights search for that exact route and dates (FR-303); the member picks the flight there.
+- Uses **Duffel** (test mode) when `DUFFEL_TOKEN` is set in `apps/server/.env`, otherwise built-in sample flights. Results from sample data or a `duffel_test_` token carry a "prices and schedules are simulated" label. Tests always use the sample provider (no network, no token).
 
 **SYS-04 Shared Itinerary** (FR-401, FR-402, FR-405, NFR-401, NFR-403). Plan: [doc/SYS-04-itinerary-plan.md](doc/SYS-04-itinerary-plan.md).
 
@@ -60,6 +67,8 @@ If you already had a `dev.db` from before the planning tables existed, `npm run 
 
 **Workflow 1 demo:** you start as *Alex Rivera*. Open *Miami Spring Break 2027* → Add my preferences (e.g. Mar 12–20, $1500, IND, Nightlife + Food) → Generate group plan → Accept. Switch "Viewing as" to Maya and then Jordan and accept as each: the third approval confirms the plan.
 
+**Flights demo:** as *Alex Rivera*, open *Nashville Reunion* (plan already confirmed) → Flights. Switch "Viewing as" to Maya, Sam or Priya to see their own airport and cap. For live Duffel test data, add `DUFFEL_TOKEN=duffel_test_...` to `apps/server/.env` and restart the server; its startup log says which provider is active.
+
 **Itinerary demo:** switch to *Ada (creator)* and open *Lisbon Getaway* → Itinerary. Open a second window as another member to watch edits sync.
 
 ## Tests
@@ -87,13 +96,16 @@ Server tests use a throwaway `prisma/test.db`, never `dev.db`.
 | NFR-401 | 10 clients, 20 updates, p95 under 5 s |
 | NFR-403 | 4 clients, 10 sync events, identical hashes |
 | FR-405 | unit tests (overlap, back-to-back, lodging rule, removal) and API check |
+| FR-301 | 10 searches across 3 confirmed trips: every offer matches the member's airport and plan dates, is at or under their cap, cheapest first, at most 10; filter drops wrong-airport / wrong-date / over-cap / non-USD offers |
+| FR-303 | 20 offers: each booking link is a Google Flights search for that exact route and dates (format checked by hand in a browser) |
+| SYS-03 access | 401 / 403 / 409 (no confirmed plan, no preferences) / 502 provider failure; no other member's airport or budget in the response; Duffel request and response mapping |
 | Permissions / access | role table, non-member 403, socket refusal, 409 on stale edit, validation |
 
 ## Desktop interface integration
 
 The planning workflow uses the laptop/web layout from [Proposed UI/UX](https://www.figma.com/make/PS0sE9rDcH031bP6FGxSmK/Proposed-UI-UX): the trip dashboard, setup wizard, sidebar, overview, private preferences, readiness, conflict, voting, and approval screens. The original destination photographs and favicon are stored under `apps/web/public`. Shared presentation components are in `components/Design.tsx`; `figma.css` contains the exported design rules and `integration.css` adapts the existing controls.
 
-The screens read and write the existing API. Trip counts, readiness, estimates, and vote totals come from server data. The Figma export's hardcoded trips and local-storage planner are not used. Destinations without a supplied photograph have a neutral cover. The existing demo-user switcher remains available for testing collaboration; production authentication is still pending. Flights, Stays, AI Assistant, and Expenses are visible navigation destinations with explicit placeholder pages. Explore provides place search and map selection; see setup below. The existing shared itinerary keeps its real-time and permission behavior within the new shell. Mobile layout work is outside this change.
+The screens read and write the existing API. Trip counts, readiness, estimates, and vote totals come from server data. The Figma export's hardcoded trips and local-storage planner are not used. Destinations without a supplied photograph have a neutral cover. The existing demo-user switcher remains available for testing collaboration; production authentication is still pending. Stays, AI Assistant, and Expenses are visible navigation destinations with explicit placeholder pages. Flights shows live or sample flight search (SYS-03). Explore provides place search and map selection; see setup below. The existing shared itinerary keeps its real-time and permission behavior within the new shell. Mobile layout work is outside this change.
 
 ## Explore: Google Maps and Places
 
