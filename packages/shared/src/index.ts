@@ -167,3 +167,4 @@ export async function buildSnapshot(
 
 export * from "./airports";
 export * from "./planning";
+export * from "./flights";
